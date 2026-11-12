@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Вход в систему</title>
     <!-- Подставь свою актуальную ссылку на SDK -->
-    <script src="https://jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 320px; text-align: center; }
@@ -31,7 +31,7 @@
 
 <script>
     const SUPABASE_URL = 'https://dltknpobtepmejgvcqtz.supabase.co/rest/v1/';
-    const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q ;
+    const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q' ;
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const msgEl = document.getElementById('msg');
