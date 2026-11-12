@@ -2,29 +2,79 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Личный кабинет</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система оценки дневной сонливости (ESS)</title>
+    <script src="https://unpkg.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { display: none; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
-        button { padding: 10px 25px; margin-top: 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background: #dc3545; color: white; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #c82333; }
-        button:disabled { background: #999; cursor: not-allowed; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { display: none; max-width: 760px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .user-info { font-size: 14px; color: #555; }
+        .btn-logout { padding: 8px 16px; border: none; border-radius: 6px; background: #dc3545; color: white; cursor: pointer; font-size: 14px; }
+        .btn-logout:hover { background: #c82333; }
+        h1 { font-size: 22px; margin: 0 0 10px 0; color: #1a1a1a; }
+        .desc { font-size: 14px; color: #666; margin-bottom: 25px; line-height: 1.5; }
+        .question { background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e5e7eb; }
+        .q-title { font-weight: bold; margin-bottom: 10px; font-size: 15px; }
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; background: white; }
+        .btn-calc { width: 100%; padding: 14px; border: none; border-radius: 8px; background: #007bff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-calc:hover { background: #0056b3; }
+        #result-box { display: none; margin-top: 25px; padding: 20px; border-radius: 8px; background: #eef6ff; border-left: 5px solid #007bff; }
+        .score-num { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
+        .score-text { font-size: 15px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-<div class="box" id="cabinet-box">
-    <h1>Добро пожаловать!</h1>
-    <p>Вы успешно прошли авторизацию на сайте.</p>
-    <p>Ваш логин: <strong id="user-email">Загрузка...</strong></p>
-    <button id="btn-logout" onclick="logout()">Выйти из аккаунта</button>
+<div class="container" id="cabinet-box">
+    <div class="header">
+        <div class="user-info">Пользователь: <strong id="user-email">Загрузка...</strong></div>
+        <button class="btn-logout" id="btn-logout" onclick="logout()">Выйти</button>
+    </div>
+
+    <h1>Интерактивная система оценки дневной сонливости (Шкала Эпворта — ESS)</h1>
+    <p class="desc">Оцените вероятность того, что вы задремлете или уснете в перечисленных ниже повседневных ситуациях (даже если вы не чувствуете сильной усталости).</p>
+
+    <div id="questions-container"></div>
+
+    <button class="btn-calc" onclick="calculateESS()">Рассчитать индекс сонливости</button>
+
+    <div id="result-box">
+        <div class="score-num" id="score-num"></div>
+        <div class="score-text" id="score-text"></div>
+    </div>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://dltknpobtepmejgvcqtz.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const situations = [
+        "1. Чтение сидя (книги, газеты, с экрана)",
+        "2. Просмотр телевизора или видео",
+        "3. Пассивное пребывание в общественном месте (театр, лекция, собрание)",
+        "4. Поездка в качестве пассажира в машине или транспорте около часа без остановки",
+        "5. Отдых лежа после обеда, если позволяют обстоятельства",
+        "6. Беседа с кем-либо в положении сидя",
+        "7. Спокойный отдых сидя после обеда (без употребления алкоголя)",
+        "8. В автомобиле, остановившемся на несколько минут в пробке или на светофоре"
+    ];
+
+    const qContainer = document.getElementById('questions-container');
+    situations.forEach((text, index) => {
+        qContainer.innerHTML += `
+            <div class="question">
+                <div class="q-title">${text}</div>
+                <select id="q-${index}">
+                    <option value="0">0 баллов — Никогда не задремлю</option>
+                    <option value="1">1 балл — Небольшая вероятность задремать</option>
+                    <option value="2">2 балла — Умеренная вероятность задремать</option>
+                    <option value="3">3 балла — Высокая вероятность задремать</option>
+                </select>
+            </div>
+        `;
+    });
 
     async function checkAuth() {
         const { data, error } = await supabaseClient.auth.getUser();
@@ -38,18 +88,44 @@
 
     checkAuth();
 
-    // Следим, не разлогинился ли юзер в другой вкладке
-    supabaseClient.auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT') {
-            window.location.replace('index.html');
+    function calculateESS() {
+        let total = 0;
+        for (let i = 0; i < situations.length; i++) {
+            total += parseInt(document.getElementById(`q-${i}`).value);
         }
-    });
+
+        const resBox = document.getElementById('result-box');
+        const scoreNum = document.getElementById('score-num');
+        const scoreText = document.getElementById('score-text');
+
+        resBox.style.display = 'block';
+        scoreNum.innerText = `Ваш результат: ${total} из 24 баллов`;
+
+        if (total <= 5) {
+            resBox.style.borderLeftColor = '#28a745';
+            resBox.style.background = '#eafaf1';
+            scoreText.innerText = 'Низкая (нормальная) дневная сонливость. Режим сна и бодрствования в пределах нормы.';
+        } else if (total <= 10) {
+            resBox.style.borderLeftColor = '#17a2b8';
+            resBox.style.background = '#e8f6f8';
+            scoreText.innerText = 'Повышенная нормальная дневная сонливость. Рекомендуется обратить внимание на гигиену сна и режим отдыха.';
+        } else if (total <= 15) {
+            resBox.style.borderLeftColor = '#ffc107';
+            resBox.style.background = '#fff9e6';
+            scoreText.innerText = 'Умеренная патологическая дневная сонливость. Возможен хронический недосып или переутомление.';
+        } else {
+            resBox.style.borderLeftColor = '#dc3545';
+            resBox.style.background = '#fdecea';
+            scoreText.innerText = 'Выраженная (тяжелая) дневная сонливость. Рекомендуется консультация специалиста (сомнолога или невролога).';
+        }
+
+        resBox.scrollIntoView({ behavior: 'smooth' });
+    }
 
     async function logout() {
         const btn = document.getElementById('btn-logout');
         btn.disabled = true;
         btn.innerText = 'Выходим...';
-        
         await supabaseClient.auth.signOut();
         window.location.replace('index.html');
     }
