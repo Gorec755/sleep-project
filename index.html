@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему</title>
+    <!-- Подставь свою актуальную ссылку на SDK -->
+    <script src="https://jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        button { width: 97%; padding: 10px; margin-top: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
+        button:disabled { background: #999; cursor: not-allowed; opacity: 0.7; }
+        .btn-login { background: #007bff; }
+        .btn-login:hover:not(:disabled) { background: #0056b3; }
+        .btn-reg { background: #28a745; }
+        .btn-reg:hover:not(:disabled) { background: #1e7e34; }
+        #msg { margin-top: 15px; font-size: 14px; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Авторизация</h2>
+    <input type="email" id="email" placeholder="Введите Email" autocomplete="email">
+    <input type="password" id="password" placeholder="Пароль (минимум 6 символов)" autocomplete="current-password">
+    <button class="btn-login" id="btn-login" onclick="login()">Войти</button>
+    <button class="btn-reg" id="btn-reg" onclick="register()">Зарегистрироваться</button>
+    <div id="msg"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://dltknpobtepmejgvcqtz.supabase.co/rest/v1/';
+    const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q ;
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const msgEl = document.getElementById('msg');
+    const btnLogin = document.getElementById('btn-login');
+    const btnReg = document.getElementById('btn-reg');
+
+    // 1. Строгая проверка через сервер (исключает бесконечный цикл редиректов)
+    supabaseClient.auth.getUser().then(({ data, error }) => {
+        if (!error && data.user) {
+            window.location.replace('cabinet.html');
+        }
+    });
+
+    // Вспомогательная функция для блокировки кнопок во время запроса
+    function setLoading(isLoading, text = '') {
+        btnLogin.disabled = isLoading;
+        btnReg.disabled = isLoading;
+        if (text) {
+            msgEl.style.color = '#333';
+            msgEl.innerText = text;
+        }
+    }
+
+    // Проверка полей перед отправкой
+    function validateInputs(email, password) {
+        if (!email || !password) {
+            msgEl.style.color = 'red';
+            msgEl.innerText = 'Заполните все поля!';
+            return false;
+        }
+        if (password.length < 6) {
+            msgEl.style.color = 'red';
+            msgEl.innerText = 'Пароль должен быть не короче 6 символов!';
+            return false;
+        }
+        return true;
+    }
+
+    async function register() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!validateInputs(email, password)) return;
+        setLoading(true, 'Регистрация...');
+
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+
+        if (error) {
+            setLoading(false);
+            msgEl.style.color = 'red';
+            msgEl.innerText = 'Ошибка: ' + error.message;
+            return;
+        }
+
+        // Проверяем, создалась ли сессия сразу или нужно подтвердить почту
+        if (data.session) {
+            msgEl.style.color = 'green';
+            msgEl.innerText = 'Успешно! Перенаправляем...';
+            window.location.replace('cabinet.html');
+        } else {
+            setLoading(false);
+            msgEl.style.color = 'green';
+            msgEl.innerText = 'Регистрация прошла! Проверьте почту для подтверждения.';
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!validateInputs(email, password)) return;
+        setLoading(true, 'Проверка данных...');
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            setLoading(false);
+            msgEl.style.color = 'red';
+            msgEl.innerText = 'Неверный логин или пароль!';
+        } else {
+            window.location.replace('cabinet.html');
+        }
+    }
+
+    // Вход по нажатию Enter в поле пароля
+    document.getElementById('password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') login();
+    });
+</script>
+
+</body>
+</html>
