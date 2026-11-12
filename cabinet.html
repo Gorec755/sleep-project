@@ -1,46 +1,58 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
- <meta charset="UTF-8">
- <title>Личный кабинет</title>
- <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
- <style>
- body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
- .box { display: none; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
- button { padding: 10px 25px; margin-top: 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background: #dc3545; color: white; }
- button:hover { background: #c82333; }
- </style>
+    <meta charset="UTF-8">
+    <title>Личный кабинет</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { display: none; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+        button { padding: 10px 25px; margin-top: 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background: #dc3545; color: white; transition: 0.2s; }
+        button:hover:not(:disabled) { background: #c82333; }
+        button:disabled { background: #999; cursor: not-allowed; }
+    </style>
 </head>
 <body>
 
 <div class="box" id="cabinet-box">
- <h1>Добро пожаловать!</h1>
- <p>Вы успешно прошли авторизацию на сайте.</p>
- <p>Ваш логин: <strong id="user-email">Загрузка...</strong></p>
- <button onclick="logout()">Выйти из аккаунта</button>
+    <h1>Добро пожаловать!</h1>
+    <p>Вы успешно прошли авторизацию на сайте.</p>
+    <p>Ваш логин: <strong id="user-email">Загрузка...</strong></p>
+    <button id="btn-logout" onclick="logout()">Выйти из аккаунта</button>
 </div>
 
 <script>
- const SUPABASE_URL = 'https://dltknpobtepmejgvcqtz.supabase.co/rest/v1/';
- const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q';
- const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = 'https://dltknpobtepmejgvcqtz.supabase.co/rest/v1/';
+    const SUPABASE_KEY = 'sb_publishable_vUTvW_zv7p2JINqY06Nx1w_YLrHtM7Q';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
- async function checkAuth() {
- const { data, error } = await supabaseClient.auth.getUser();
- if (error || !data.user) {
- window.location.replace('index.html');
- } else {
- document.getElementById('user-email').innerText = data.user.email;
- document.getElementById('cabinet-box').style.display = 'block';
- }
- }
+    async function checkAuth() {
+        const { data, error } = await supabaseClient.auth.getUser();
+        if (error || !data.user) {
+            window.location.replace('index.html');
+        } else {
+            document.getElementById('user-email').innerText = data.user.email;
+            document.getElementById('cabinet-box').style.display = 'block';
+        }
+    }
 
- checkAuth();
+    checkAuth();
 
- async function logout() {
- await supabaseClient.auth.signOut();
- window.location.replace('index.html');
- }
+    // Следим, не разлогинился ли юзер в другой вкладке
+    supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') {
+            window.location.replace('index.html');
+        }
+    });
+
+    async function logout() {
+        const btn = document.getElementById('btn-logout');
+        btn.disabled = true;
+        btn.innerText = 'Выходим...';
+        
+        await supabaseClient.auth.signOut();
+        window.location.replace('index.html');
+    }
 </script>
 
 </body>
